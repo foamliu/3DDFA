@@ -64,9 +64,9 @@ class DDFADataset(Dataset):
 
 
 if __name__ == "__main__":
-    train = DeepIQADataset('train')
+    train = DDFADataset('train')
     print('num_train: ' + str(len(train)))
-    valid = DeepIQADataset('valid')
+    valid = DDFADataset('valid')
     print('num_valid: ' + str(len(valid)))
 
     print(train[0])
