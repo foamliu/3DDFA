@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import numpy as np
-
 from .ddfa import _parse_param
 from .params import u_filter, w_filter, w_exp_filter, std_size, param_mean, param_std
 

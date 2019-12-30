@@ -12,6 +12,13 @@ MS-Celeb-1M dataset for training, 3,804,846 faces over 85,164 identities.
 
 ## Usage
 
+1. Clone this repo.
+2. Build cython module:
+```bash
+$ cd utils/cython
+$ python3 setup.py build_ext -i
+```
+
 ### Data preprocess
 Extract images, scan them, to get bounding boxes and landmarks:
 ```bash

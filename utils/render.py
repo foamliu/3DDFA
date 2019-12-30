@@ -9,7 +9,6 @@ Modified from https://raw.githubusercontent.com/YadiraF/PRNet/master/utils/rende
 __author__ = 'cleardusk'
 
 import numpy as np
-
 from .cython import mesh_core_cython
 from .params import pncc_code
 

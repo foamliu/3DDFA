@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-import argparse
 import os.path as osp
 from pathlib import Path
-
-import cv2
 import numpy as np
+
 import torch
 import torch.utils.data as data
-
-from .io import _numpy_to_tensor, _load_cpu
+import cv2
+import pickle
+import argparse
+from .io import _numpy_to_tensor, _load_cpu, _load_gpu
 from .params import *
 
 
