@@ -1,152 +1,115 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+#!/usr/bin/env python3
+# coding: utf-8
 
 import os
-
 import numpy as np
-from skimage import io
-
-from .cython import mesh_core_cython
-
-
-## TODO
-## TODO: c++ version
-def read_obj(obj_name):
-    ''' read mesh
-    '''
-    return 0
+import torch
+import pickle
+import scipy.io as sio
 
 
-# ------------------------- write
-def write_asc(path, vertices):
-    '''
-    Args:
-        vertices: shape = (nver, 3)
-    '''
-    if path.split('.')[-1] == 'asc':
-        np.savetxt(path, vertices)
+def mkdir(d):
+    """only works on *nix system"""
+    if not os.path.isdir(d) and not os.path.exists(d):
+        os.system('mkdir -p {}'.format(d))
+
+
+def _get_suffix(filename):
+    """a.jpg -> jpg"""
+    pos = filename.rfind('.')
+    if pos == -1:
+        return ''
+    return filename[pos + 1:]
+
+
+def _load(fp):
+    suffix = _get_suffix(fp)
+    if suffix == 'npy':
+        return np.load(fp)
+    elif suffix == 'pkl':
+        return pickle.load(open(fp, 'rb'))
+
+
+def _dump(wfp, obj):
+    suffix = _get_suffix(wfp)
+    if suffix == 'npy':
+        np.save(wfp, obj)
+    elif suffix == 'pkl':
+        pickle.dump(obj, open(wfp, 'wb'))
     else:
-        np.savetxt(path + '.asc', vertices)
+        raise Exception('Unknown Type: {}'.format(suffix))
 
 
-def write_obj_with_colors(obj_name, vertices, triangles, colors):
-    ''' Save 3D face model with texture represented by colors.
-    Args:
-        obj_name: str
-        vertices: shape = (nver, 3)
-        triangles: shape = (ntri, 3)
-        colors: shape = (nver, 3)
-    '''
-    triangles = triangles.copy()
-    triangles += 1  # meshlab start with 1
-
-    if obj_name.split('.')[-1] != 'obj':
-        obj_name = obj_name + '.obj'
-
-    # write obj
-    with open(obj_name, 'w') as f:
-
-        # write vertices & colors
-        for i in range(vertices.shape[0]):
-            # s = 'v {} {} {} \n'.format(vertices[0,i], vertices[1,i], vertices[2,i])
-            s = 'v {} {} {} {} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2], colors[i, 0],
-                                               colors[i, 1], colors[i, 2])
-            f.write(s)
-
-        # write f: ver ind/ uv ind
-        [k, ntri] = triangles.shape
-        for i in range(triangles.shape[0]):
-            # s = 'f {} {} {}\n'.format(triangles[i, 0], triangles[i, 1], triangles[i, 2])
-            s = 'f {} {} {}\n'.format(triangles[i, 2], triangles[i, 1], triangles[i, 0])
-            f.write(s)
+def _load_tensor(fp, mode='cpu'):
+    if mode.lower() == 'cpu':
+        return torch.from_numpy(_load(fp))
+    elif mode.lower() == 'gpu':
+        return torch.from_numpy(_load(fp)).cuda()
 
 
-## TODO: c++ version
-def write_obj_with_texture(obj_name, vertices, triangles, texture, uv_coords):
-    ''' Save 3D face model with texture represented by texture map.
-    Ref: https://github.com/patrikhuber/eos/blob/bd00155ebae4b1a13b08bf5a991694d682abbada/include/eos/core/Mesh.hpp
-    Args:
-        obj_name: str
-        vertices: shape = (nver, 3)
-        triangles: shape = (ntri, 3)
-        texture: shape = (256,256,3)
-        uv_coords: shape = (nver, 3) max value<=1
-    '''
-    if obj_name.split('.')[-1] != 'obj':
-        obj_name = obj_name + '.obj'
-    mtl_name = obj_name.replace('.obj', '.mtl')
-    texture_name = obj_name.replace('.obj', '_texture.png')
-
-    triangles = triangles.copy()
-    triangles += 1  # mesh lab start with 1
-
-    # write obj
-    with open(obj_name, 'w') as f:
-        # first line: write mtlib(material library)
-        s = "mtllib {}\n".format(os.path.abspath(mtl_name))
-        f.write(s)
-
-        # write vertices
-        for i in range(vertices.shape[0]):
-            s = 'v {} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2])
-            f.write(s)
-
-        # write uv coords
-        for i in range(uv_coords.shape[0]):
-            s = 'vt {} {}\n'.format(uv_coords[i, 0], 1 - uv_coords[i, 1])
-            f.write(s)
-
-        f.write("usemtl FaceTexture\n")
-
-        # write f: ver ind/ uv ind
-        for i in range(triangles.shape[0]):
-            s = 'f {}/{} {}/{} {}/{}\n'.format(triangles[i, 2], triangles[i, 2], triangles[i, 1], triangles[i, 1],
-                                               triangles[i, 0], triangles[i, 0])
-            f.write(s)
-
-    # write mtl
-    with open(mtl_name, 'w') as f:
-        f.write("newmtl FaceTexture\n")
-        s = 'map_Kd {}\n'.format(os.path.abspath(texture_name))  # map to image
-        f.write(s)
-
-    # write texture as png
-    imsave(texture_name, texture)
+def _tensor_to_cuda(x):
+    if x.is_cuda:
+        return x
+    else:
+        return x.cuda()
 
 
-# c++ version
-def write_obj_with_colors_texture(obj_name, vertices, triangles, colors, texture, uv_coords):
-    ''' Save 3D face model with texture. 
-    Ref: https://github.com/patrikhuber/eos/blob/bd00155ebae4b1a13b08bf5a991694d682abbada/include/eos/core/Mesh.hpp
-    Args:
-        obj_name: str
-        vertices: shape = (nver, 3)
-        triangles: shape = (ntri, 3)
-        colors: shape = (nver, 3)
-        texture: shape = (256,256,3)
-        uv_coords: shape = (nver, 3) max value<=1
-    '''
-    if obj_name.split('.')[-1] != 'obj':
-        obj_name = obj_name + '.obj'
-    mtl_name = obj_name.replace('.obj', '.mtl')
-    texture_name = obj_name.replace('.obj', '_texture.png')
+def _load_gpu(fp):
+    return torch.from_numpy(_load(fp)).cuda()
 
-    triangles = triangles.copy()
-    triangles += 1  # mesh lab start with 1
 
-    # write obj
-    vertices, colors, uv_coords = vertices.astype(np.float32).copy(), colors.astype(
-        np.float32).copy(), uv_coords.astype(np.float32).copy()
-    mesh_core_cython.write_obj_with_colors_texture_core(str.encode(obj_name), str.encode(os.path.abspath(mtl_name)),
-                                                        vertices, triangles, colors, uv_coords, vertices.shape[0],
-                                                        triangles.shape[0], uv_coords.shape[0])
+def load_bfm(model_path):
+    suffix = _get_suffix(model_path)
+    if suffix == 'mat':
+        C = sio.loadmat(model_path)
+        model = C['model_refine']
+        model = model[0, 0]
 
-    # write mtl
-    with open(mtl_name, 'w') as f:
-        f.write("newmtl FaceTexture\n")
-        s = 'map_Kd {}\n'.format(os.path.abspath(texture_name))  # map to image
-        f.write(s)
+        model_new = {}
+        w_shp = model['w'].astype(np.float32)
+        model_new['w_shp_sim'] = w_shp[:, :40]
+        w_exp = model['w_exp'].astype(np.float32)
+        model_new['w_exp_sim'] = w_exp[:, :10]
 
-    # write texture as png
-    io.imsave(texture_name, texture)
+        u_shp = model['mu_shape']
+        u_exp = model['mu_exp']
+        u = (u_shp + u_exp).astype(np.float32)
+        model_new['mu'] = u
+        model_new['tri'] = model['tri'].astype(np.int32) - 1
+
+        # flatten it, pay attention to index value
+        keypoints = model['keypoints'].astype(np.int32) - 1
+        keypoints = np.concatenate((3 * keypoints, 3 * keypoints + 1, 3 * keypoints + 2), axis=0)
+
+        model_new['keypoints'] = keypoints.T.flatten()
+
+        #
+        w = np.concatenate((w_shp, w_exp), axis=1)
+        w_base = w[keypoints]
+        w_norm = np.linalg.norm(w, axis=0)
+        w_base_norm = np.linalg.norm(w_base, axis=0)
+
+        dim = w_shp.shape[0] // 3
+        u_base = u[keypoints].reshape(-1, 1)
+        w_shp_base = w_shp[keypoints]
+        w_exp_base = w_exp[keypoints]
+
+        model_new['w_norm'] = w_norm
+        model_new['w_base_norm'] = w_base_norm
+        model_new['dim'] = dim
+        model_new['u_base'] = u_base
+        model_new['w_shp_base'] = w_shp_base
+        model_new['w_exp_base'] = w_exp_base
+
+        _dump(model_path.replace('.mat', '.pkl'), model_new)
+        return model_new
+    else:
+        return _load(model_path)
+
+
+_load_cpu = _load
+_numpy_to_tensor = lambda x: torch.from_numpy(x)
+_tensor_to_numpy = lambda x: x.cpu()
+_numpy_to_cuda = lambda x: _tensor_to_cuda(torch.from_numpy(x))
+_cuda_to_tensor = lambda x: x.cpu()
+_cuda_to_numpy = lambda x: x.cpu().numpy()

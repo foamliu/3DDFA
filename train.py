@@ -4,10 +4,11 @@ from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
-from config import device, grad_clip, print_freq, num_workers
-from data_gen import DDFADataset
-from misc import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger, accuracy, get_learning_rate
+from config import device, print_freq, num_workers
+from misc import parse_args, save_checkpoint, AverageMeter, get_logger, get_learning_rate
 from models import mobilenet_1
+from utils.ddfa import DDFADataset
+from vdc_loss import VDCLoss
 
 
 def train_net(args):
@@ -15,7 +16,7 @@ def train_net(args):
     np.random.seed(7)
     checkpoint = args.checkpoint
     start_epoch = 0
-    best_acc = 0
+    best_loss = float('inf')
     writer = SummaryWriter()
     epochs_since_improvement = 0
 
@@ -40,7 +41,7 @@ def train_net(args):
     model = model.to(device)
 
     # Loss function
-    criterion = nn.BCELoss().to(device)
+    criterion = VDCLoss()
 
     # Custom dataloaders
     train_dataset = DDFADataset('train')
@@ -55,32 +56,30 @@ def train_net(args):
     # Epochs
     for epoch in range(start_epoch, args.end_epoch):
         # One epoch's training
-        train_loss, train_acc = train(train_loader=train_loader,
-                                      model=model,
-                                      criterion=criterion,
-                                      optimizer=optimizer,
-                                      epoch=epoch,
-                                      logger=logger)
+        train_loss = train(train_loader=train_loader,
+                           model=model,
+                           criterion=criterion,
+                           optimizer=optimizer,
+                           epoch=epoch,
+                           logger=logger)
 
         writer.add_scalar('model/train_loss', train_loss, epoch)
-        writer.add_scalar('model/train_accuracy', train_acc, epoch)
 
         lr = get_learning_rate(optimizer)
         writer.add_scalar('model/learning_rate', lr, epoch)
         print('\nCurrent effective learning rate: {}\n'.format(lr))
 
         # One epoch's validation
-        valid_loss, valid_acc = valid(valid_loader=valid_loader,
-                                      model=model,
-                                      criterion=criterion,
-                                      logger=logger)
+        valid_loss = valid(valid_loader=valid_loader,
+                           model=model,
+                           criterion=criterion,
+                           logger=logger)
 
         writer.add_scalar('model/valid_loss', valid_loss, epoch)
-        writer.add_scalar('model/valid_accuracy', valid_acc, epoch)
 
         # Check if there was an improvement
-        is_best = valid_acc > best_acc
-        best_acc = max(valid_acc, best_acc)
+        is_best = valid_loss < best_loss
+        best_loss = min(valid_loss, best_loss)
         if not is_best:
             epochs_since_improvement += 1
             print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
@@ -88,7 +87,7 @@ def train_net(args):
             epochs_since_improvement = 0
 
         # Save checkpoint
-        save_checkpoint(epoch, epochs_since_improvement, model, optimizer, best_acc, is_best)
+        save_checkpoint(epoch, epochs_since_improvement, model, optimizer, best_loss, is_best)
         scheduler.step(epoch)
 
 
@@ -96,91 +95,65 @@ def train(train_loader, model, criterion, optimizer, epoch, logger):
     model.train()  # train mode (dropout and batchnorm is used)
 
     losses = AverageMeter()
-    accs = AverageMeter()
 
     # Batches
-    for i, (img_0, img_1, target) in enumerate(train_loader):
+    for i, (input, target) in enumerate(train_loader):
         # Move to GPU, if available
-        img_0 = img_0.to(device)
-        img_1 = img_1.to(device)
-        y = target.float().to(device)
+        input = input.to(device)
+        target = target.to(device)
 
         # Forward prop.
-        x = model(img_0, img_1)
-        x = x.squeeze(dim=1)
-        # print('x: ' + str(x))
+        output = model(input)
 
         # Calculate loss
-        loss = criterion(x, y)
-        # print('x.size(): ' + str(x.size()))
-        # print('y.size(): ' + str(y.size()))
-        # loss = -y * torch.log(x) - (1 - y) * torch.log(1 - x)
-        # print('loss.size(): ' + str(loss.size()))
-        # loss = loss.mean()
-        # print('loss.size(): ' + str(loss.size()))
-        acc = accuracy(x, y)
+        loss = criterion(output, target)
 
         # Back prop.
         optimizer.zero_grad()
         loss.backward()
 
-        # Clip gradients
-        clip_gradient(optimizer, grad_clip)
-
         # Update weights
         optimizer.step()
 
         # Keep track of metrics
-        losses.update(loss.item())
-        accs.update(acc)
+        losses.update(loss.item(), input.size(0))
 
         # Print status
         if i % print_freq == 0:
             if i % print_freq == 0:
-                status = 'Epoch: [{0}][{1}/{2}]\t' \
-                         'Loss {loss.val:.5f} ({loss.avg:.5f})\t' \
-                         'Accuracy {acc.val:.5f} ({acc.avg:.5f})\t'.format(epoch, i,
-                                                                           len(train_loader),
-                                                                           loss=losses,
-                                                                           acc=accs,
-                                                                           )
+                status = f'Epoch: [{epoch}][{i}/{len(train_loader)}]\t' \
+                    f'Loss {losses.val:.4f} ({losses.avg:.4f})'
+
                 logger.info(status)
 
-    return losses.avg, accs.avg
+    return losses.avg
 
 
 def valid(valid_loader, model, criterion, logger):
     model.eval()  # eval mode (dropout and batchnorm is NOT used)
 
     losses = AverageMeter()
-    accs = AverageMeter()
 
-    # Batches
-    for i, (img_0, img_1, target) in enumerate(valid_loader):
-        # Move to GPU, if available
-        img_0 = img_0.to(device)
-        img_1 = img_1.to(device)
-        y = target.float().to(device)
+    with torch.no_grad():
+        # Batches
+        for i, (input, target) in enumerate(valid_loader):
+            # Move to GPU, if available
+            input = input.to(device)
+            target = target.to(device)
 
-        # Forward prop.
-        x = model(img_0, img_1)
-        x = x.squeeze(dim=1)
+            # Forward prop.
+            output = model(input)
 
-        # Calculate loss
-        loss = criterion(x, y)
-        # loss = -y * torch.log(x) - (1 - y) * torch.log(1 - x)
-        # loss = loss.mean()
-        acc = accuracy(x, y)
+            # Calculate loss
+            loss = criterion(output, target)
 
-        # Keep track of metrics
-        losses.update(loss.item())
-        accs.update(acc)
+            # Keep track of metrics
+            losses.update(loss.item(), input.size(0))
 
     # Print status
-    status = 'Validation\t Loss {loss.avg:.5f}\t Accuracy {acc.avg:.5f}\n'.format(loss=losses, acc=accs)
-    logger.info(status)
+    logger.info(f'Validation\t Loss {losses.avg:.5f}\n')
 
-    return losses.avg, accs.avg
+    return losses.avg
 
 
 def main():
