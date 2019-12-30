@@ -12,17 +12,18 @@ from config import device, print_freq, num_workers, grad_clip, root, filelists_t
 from misc import save_checkpoint, AverageMeter, get_logger, get_learning_rate, clip_gradient
 from models import mobilenet_1
 from utils.ddfa import DDFADataset, ToTensorGjz, NormalizeGjz
-from vdc_loss import VDCLoss
+from wpdc_loss import WPDCLoss
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='3DMM Fitting')
     # general
     parser.add_argument('--end-epoch', type=int, default=1000, help='training epoch size.')
-    parser.add_argument('--base_lr', type=float, default=0.001, help='start learning rate')
+    parser.add_argument('--base_lr', type=float, default=0.02, help='start learning rate')
     parser.add_argument('--weight-decay', type=float, default=5e-4, help='weight decay')
-    parser.add_argument('--batch-size', type=int, default=128, help='batch size in each context')
-    parser.add_argument('--milestones', default='15,25,30', type=str)
+    parser.add_argument('--batch-size', type=int, default=512, help='batch size in each context')
+    parser.add_argument('--milestones', default='30,40', type=str)
+    parser.add_argument('--warmup', default=5, type=int)
     parser.add_argument('--checkpoint', type=str, default=None, help='checkpoint')
     args = parser.parse_args()
     return args
@@ -79,7 +80,7 @@ def train_net(args):
     model = model.to(device)
 
     # Loss function
-    criterion = VDCLoss()
+    criterion = WPDCLoss()
 
     # Custom dataloaders
     normalize = NormalizeGjz(mean=127.5, std=128)  # may need optimization
