@@ -6,8 +6,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from config import device, grad_clip, print_freq, num_workers
 from data_gen import DDFADataset
-from models import RankNetMobile
-from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger, accuracy, get_learning_rate
+from misc import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger, accuracy, get_learning_rate
+from models import mobilenet_1
 
 
 def train_net(args):
@@ -21,7 +21,7 @@ def train_net(args):
 
     # Initialize / load checkpoint
     if checkpoint is None:
-        model = RankNetMobile()
+        model = mobilenet_1()
         model = nn.DataParallel(model)
 
         # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)

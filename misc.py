@@ -104,7 +104,7 @@ def accuracy(pred, target):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train face network')
+    parser = argparse.ArgumentParser(description='3DMM Fitting')
     # general
     parser.add_argument('--end-epoch', type=int, default=1000, help='training epoch size.')
     parser.add_argument('--lr', type=float, default=0.001, help='start learning rate')
