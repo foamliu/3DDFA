@@ -1,4 +1,3 @@
-import argparse
 import logging
 import math
 
@@ -101,19 +100,6 @@ def accuracy(pred, target):
     correct_total = sum(correct)
     # return correct_total.item() * (100.0 / batch_size)
     return correct_total * (100.0 / batch_size)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='3DMM Fitting')
-    # general
-    parser.add_argument('--end-epoch', type=int, default=1000, help='training epoch size.')
-    parser.add_argument('--lr', type=float, default=0.001, help='start learning rate')
-    parser.add_argument('--lr-step', type=int, default=10, help='period of learning rate decay')
-    parser.add_argument('--weight-decay', type=float, default=5e-4, help='weight decay')
-    parser.add_argument('--batch-size', type=int, default=128, help='batch size in each context')
-    parser.add_argument('--checkpoint', type=str, default=None, help='checkpoint')
-    args = parser.parse_args()
-    return args
 
 
 def get_logger():
