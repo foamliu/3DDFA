@@ -1,13 +1,14 @@
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
-from config import device, print_freq, num_workers
+from config import device, print_freq, num_workers, root, filelists_train, param_fp_train, filelists_val, param_fp_val
 from misc import parse_args, save_checkpoint, AverageMeter, get_logger, get_learning_rate
 from models import mobilenet_1
-from utils.ddfa import DDFADataset
+from utils.ddfa import DDFADataset, ToTensorGjz, NormalizeGjz
 from vdc_loss import VDCLoss
 
 
@@ -44,10 +45,18 @@ def train_net(args):
     criterion = VDCLoss()
 
     # Custom dataloaders
-    train_dataset = DDFADataset('train')
+    normalize = NormalizeGjz(mean=127.5, std=128)  # may need optimization
+
+    train_dataset = DDFADataset(root=root,
+                                filelists=filelists_train,
+                                param_fp=param_fp_train,
+                                transform=transforms.Compose([ToTensorGjz(), normalize]))
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                                                num_workers=num_workers)
-    valid_dataset = DDFADataset('valid')
+    valid_dataset = DDFADataset(root=root,
+                                filelists=filelists_val,
+                                param_fp=param_fp_val,
+                                transform=transforms.Compose([ToTensorGjz(), normalize]))
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
                                                num_workers=num_workers)
 
