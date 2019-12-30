@@ -5,7 +5,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
 from config import device, grad_clip, print_freq, num_workers
-from data_gen import DeepIQADataset
+from data_gen import DDFADataset
 from models import RankNetMobile
 from utils import parse_args, save_checkpoint, AverageMeter, clip_gradient, get_logger, accuracy, get_learning_rate
 
@@ -43,10 +43,10 @@ def train_net(args):
     criterion = nn.BCELoss().to(device)
 
     # Custom dataloaders
-    train_dataset = DeepIQADataset('train')
+    train_dataset = DDFADataset('train')
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
                                                num_workers=num_workers)
-    valid_dataset = DeepIQADataset('valid')
+    valid_dataset = DDFADataset('valid')
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False,
                                                num_workers=num_workers)
 
