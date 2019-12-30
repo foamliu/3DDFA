@@ -5,8 +5,8 @@ from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.tensorboard import SummaryWriter
 
-from config import device, print_freq, num_workers, root, filelists_train, param_fp_train, filelists_val, param_fp_val
-from misc import parse_args, save_checkpoint, AverageMeter, get_logger, get_learning_rate
+from config import device, print_freq, num_workers, grad_clip, root, filelists_train, param_fp_train, filelists_val, param_fp_val
+from misc import parse_args, save_checkpoint, AverageMeter, get_logger, get_learning_rate, clip_gradient
 from models import mobilenet_1
 from utils.ddfa import DDFADataset, ToTensorGjz, NormalizeGjz
 from vdc_loss import VDCLoss
@@ -120,6 +120,9 @@ def train(train_loader, model, criterion, optimizer, epoch, logger):
         # Back prop.
         optimizer.zero_grad()
         loss.backward()
+
+        # Clip gradients
+        clip_gradient(optimizer, grad_clip)
 
         # Update weights
         optimizer.step()
