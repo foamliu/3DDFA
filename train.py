@@ -32,6 +32,8 @@ def parse_args():
 def adjust_learning_rate(optimizer, epoch, milestones=None):
     """Sets the learning rate: milestone is a list/tuple"""
 
+    milestones = eval(milestones)
+
     def to(epoch):
         if epoch <= args.warmup:
             return 1
