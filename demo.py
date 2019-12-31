@@ -6,7 +6,8 @@ import torchvision.transforms as transforms
 
 from config import device
 from utils.ddfa import ToTensorGjz, NormalizeGjz
-from utils.inference import predict_68pts, parse_roi_box_from_bbox
+from utils.estimate_pose import parse_pose
+from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -37,3 +38,12 @@ if __name__ == '__main__':
     roi_box = parse_roi_box_from_bbox(bbox)
     pts68 = predict_68pts(param, roi_box)
     print('pts68: ' + str(pts68))
+
+    P, pose = parse_pose(param)
+    print('P: ' + str(P))
+    print('pose: ' + str(pose))
+
+    vertices = predict_dense(param, roi_box)
+    print('vertices: ' + str(vertices))
+    print('vertices.shape: ' + str(vertices.shape))
+    # dump_to_ply(vertices, tri, '{}_{}.ply'.format(img_fp.replace(suffix, ''), ind))
