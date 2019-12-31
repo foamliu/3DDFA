@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 
 from config import device
 from utils.ddfa import ToTensorGjz, NormalizeGjz
+from utils.inference import predict_68pts, parse_roi_box_from_bbox
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -29,4 +30,10 @@ if __name__ == '__main__':
         param = model(input)
         param = param.squeeze().cpu().numpy().flatten().astype(np.float32)
 
-    print(param)
+    print('param: ' + str(param))
+
+    # 68 pts
+    bbox = [0, 0, 120, 120]
+    roi_box = parse_roi_box_from_bbox(bbox)
+    pts68 = predict_68pts(param, roi_box)
+    print('pts68: ' + str(pts68))
