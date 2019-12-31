@@ -151,3 +151,10 @@ def mobilenet_05(num_classes=62, input_channel=3):
 def mobilenet_025(num_classes=62, input_channel=3):
     model = MobileNet(widen_factor=0.25, num_classes=num_classes, input_channel=input_channel)
     return model
+
+
+if __name__ == "__main__":
+    from torchscope import scope
+
+    model = mobilenet_1()
+    scope(model, (3, 120, 120))
