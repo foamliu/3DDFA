@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     transform = transforms.Compose([ToTensorGjz(), NormalizeGjz(mean=127.5, std=128)])
 
-    filename = 'images/0000.png'
+    filename = 'images/0008.png'
     img = cv.imread(filename)
     img = cv.resize(img, (120, 120), interpolation=cv.INTER_LINEAR)
     input = transform(img).unsqueeze(0)
