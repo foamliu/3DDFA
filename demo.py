@@ -10,7 +10,7 @@ from misc import ensure_folder
 from utils.ddfa import ToTensorGjz, NormalizeGjz
 from utils.estimate_pose import parse_pose
 from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply, get_suffix, get_colors, \
-    write_obj_with_colors
+    write_obj_with_colors, crop_img
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -26,13 +26,15 @@ if __name__ == '__main__':
     transform = transforms.Compose([ToTensorGjz(), NormalizeGjz(mean=127.5, std=128)])
 
     filename = 'images/0008.png'
-    img = cv.imread(filename)
-    rects = face_detector(img, 1)
+    img_ori = cv.imread(filename)
+    rects = face_detector(img_ori, 1)
     rect = rects[0]
     bbox = [rect.left(), rect.top(), rect.right(), rect.bottom()]
     print('bbox: ' + str(bbox))
     roi_box = parse_roi_box_from_bbox(bbox)
     print('roi_box: ' + str(roi_box))
+
+    img = crop_img(img_ori, roi_box)
 
     img = cv.resize(img, (120, 120), interpolation=cv.INTER_LINEAR)
     input = transform(img).unsqueeze(0)
@@ -67,6 +69,6 @@ if __name__ == '__main__':
     dump_to_ply(vertices, tri, '{}.ply'.format(filename.replace(suffix, '')))
 
     wfp = '{}.obj'.format(filename.replace(suffix, ''))
-    colors = get_colors(img, vertices)
+    colors = get_colors(img_ori, vertices)
     write_obj_with_colors(wfp, vertices, tri, colors)
     print('Dump obj with sampled texture to {}'.format(wfp))
