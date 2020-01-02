@@ -1,15 +1,15 @@
 import cv2 as cv
 import numpy as np
+import scipy.io as sio
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
-import scipy.io as sio
+
 from config import device
+from misc import ensure_folder
 from utils.ddfa import ToTensorGjz, NormalizeGjz
 from utils.estimate_pose import parse_pose
 from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply, get_suffix
-from misc import ensure_folder
-
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -53,4 +53,4 @@ if __name__ == '__main__':
     suffix = get_suffix(filename)
     print('suffix: ' + suffix)
     tri = sio.loadmat('visualize/tri.mat')['tri']
-    dump_to_ply(vertices, tri, 'result/{}.ply'.format(suffix))
+    dump_to_ply(vertices, tri, '{}.ply'.format(filename.replace(suffix, '')))
