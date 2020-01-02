@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
-
+import scipy.io as sio
 from config import device
 from utils.ddfa import ToTensorGjz, NormalizeGjz
 from utils.estimate_pose import parse_pose
@@ -46,4 +46,6 @@ if __name__ == '__main__':
     vertices = predict_dense(param, roi_box)
     print('vertices: ' + str(vertices))
     print('vertices.shape: ' + str(vertices.shape))
-    # dump_to_ply(vertices, tri, '{}_{}.ply'.format(img_fp.replace(suffix, ''), ind))
+
+    tri = sio.loadmat('visualize/tri.mat')['tri']
+    dump_to_ply(vertices, tri, 'result.ply')
