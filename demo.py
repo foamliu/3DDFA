@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 from config import device
 from misc import ensure_folder
-from utils.ddfa import ToTensorGjz, NormalizeGjz
+from utils.ddfa import ToTensorGjz, NormalizeGjz, _parse_param
 from utils.estimate_pose import parse_pose
 from utils.inference import predict_68pts, predict_dense, dump_to_ply, get_suffix, get_colors, \
     write_obj_with_colors, crop_img, parse_roi_box_from_landmark, parse_roi_box_from_bbox
@@ -57,6 +57,8 @@ if __name__ == '__main__':
         param = param.squeeze().cpu().numpy().flatten().astype(np.float32)
 
     print('param: ' + str(param))
+    p, offset, alpha_shp, alpha_exp = _parse_param(param)
+    print('alpha_exp: ' + str(alpha_exp))
 
     # 68 pts
     # bbox = [0, 0, 120, 120]
