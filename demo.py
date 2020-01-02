@@ -40,14 +40,16 @@ if __name__ == '__main__':
     bbox = [0, 0, 120, 120]
     roi_box = parse_roi_box_from_bbox(bbox)
     pts68 = predict_68pts(param, roi_box)
-    print('pts68: ' + str(pts68))
+    # print('pts68: ' + str(pts68))
+    print('pts68.shape: ' + str(pts68.shape))
 
     P, pose = parse_pose(param)
-    print('P: ' + str(P))
+    # print('P: ' + str(P))
+    print('P.shape: ' + str(P.shape))
     print('pose: ' + str(pose))
 
     vertices = predict_dense(param, roi_box)
-    print('vertices: ' + str(vertices))
+    # print('vertices: ' + str(vertices))
     print('vertices.shape: ' + str(vertices.shape))
 
     ensure_folder('result')
