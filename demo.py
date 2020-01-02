@@ -31,7 +31,8 @@ if __name__ == '__main__':
 
     transform = transforms.Compose([ToTensorGjz(), NormalizeGjz(mean=127.5, std=128)])
 
-    filename = 'images/0008.png'
+    # filename = 'images/0008.png'
+    filename = 'images/jinguanzhang.jpg'
     img_ori = cv.imread(filename)
     rects = face_detector(img_ori, 1)
     rect = rects[0]
