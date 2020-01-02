@@ -7,7 +7,9 @@ import scipy.io as sio
 from config import device
 from utils.ddfa import ToTensorGjz, NormalizeGjz
 from utils.estimate_pose import parse_pose
-from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply
+from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply, get_suffix
+from misc import ensure_folder
+
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -47,5 +49,8 @@ if __name__ == '__main__':
     print('vertices: ' + str(vertices))
     print('vertices.shape: ' + str(vertices.shape))
 
+    ensure_folder('result')
+    suffix = get_suffix(filename)
+    print('suffix: ' + suffix)
     tri = sio.loadmat('visualize/tri.mat')['tri']
-    dump_to_ply(vertices, tri, 'result.ply')
+    dump_to_ply(vertices, tri, 'result/{}.ply'.format(suffix))
