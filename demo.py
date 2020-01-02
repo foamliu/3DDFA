@@ -9,7 +9,8 @@ from config import device
 from misc import ensure_folder
 from utils.ddfa import ToTensorGjz, NormalizeGjz
 from utils.estimate_pose import parse_pose
-from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply, get_suffix
+from utils.inference import predict_68pts, parse_roi_box_from_bbox, predict_dense, dump_to_ply, get_suffix, get_colors, \
+    write_obj_with_colors
 
 if __name__ == '__main__':
     checkpoint = 'BEST_checkpoint.tar'
@@ -54,3 +55,8 @@ if __name__ == '__main__':
     print('suffix: ' + suffix)
     tri = sio.loadmat('visualize/tri.mat')['tri']
     dump_to_ply(vertices, tri, '{}.ply'.format(filename.replace(suffix, '')))
+
+    wfp = '{}.obj'.format(filename.replace(suffix, ''))
+    colors = get_colors(img, vertices)
+    write_obj_with_colors(wfp, vertices, tri, colors)
+    print('Dump obj with sampled texture to {}'.format(wfp))
