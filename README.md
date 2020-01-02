@@ -41,3 +41,8 @@ $ tensorboard --logdir=runs
 $ python3 demo.py
 ```
 
+#### Image
+![image](https://github.com/foamliu/3DDFA/raw/master/images/0008.jpg)
+
+#### 3D Face
+![image](https://github.com/foamliu/3DDFA/raw/master/images/0008.gif)
