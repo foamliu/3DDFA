@@ -4,7 +4,7 @@ import scipy.io as sio
 import torch
 import torch.backends.cudnn as cudnn
 import torchvision.transforms as transforms
-
+import dlib
 from config import device
 from misc import ensure_folder
 from utils.ddfa import ToTensorGjz, NormalizeGjz
@@ -22,10 +22,18 @@ if __name__ == '__main__':
     model = model.to(device)
     model.eval()
 
+    face_detector = dlib.get_frontal_face_detector()
     transform = transforms.Compose([ToTensorGjz(), NormalizeGjz(mean=127.5, std=128)])
 
     filename = 'images/0008.png'
     img = cv.imread(filename)
+    rects = face_detector(img, 1)
+    rect = rects[0]
+    bbox = [rect.left(), rect.top(), rect.right(), rect.bottom()]
+    print('bbox: ' + str(bbox))
+    roi_box = parse_roi_box_from_bbox(bbox)
+    print('roi_box: ' + str(roi_box))
+
     img = cv.resize(img, (120, 120), interpolation=cv.INTER_LINEAR)
     input = transform(img).unsqueeze(0)
     input = input.to(device)
@@ -37,8 +45,8 @@ if __name__ == '__main__':
     print('param: ' + str(param))
 
     # 68 pts
-    bbox = [0, 0, 120, 120]
-    roi_box = parse_roi_box_from_bbox(bbox)
+    # bbox = [0, 0, 120, 120]
+    # roi_box = parse_roi_box_from_bbox(bbox)
     pts68 = predict_68pts(param, roi_box)
     # print('pts68: ' + str(pts68))
     print('pts68.shape: ' + str(pts68.shape))
