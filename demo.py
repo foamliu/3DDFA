@@ -35,15 +35,15 @@ if __name__ == '__main__':
     img_ori = cv.imread(filename)
     rects = face_detector(img_ori, 1)
     rect = rects[0]
-    bbox = [rect.left(), rect.top(), rect.right(), rect.bottom()]
+    # bbox = [rect.left(), rect.top(), rect.right(), rect.bottom()]
     # print('bbox: ' + str(bbox))
-    roi_box = parse_roi_box_from_bbox(bbox)
+    # roi_box = parse_roi_box_from_bbox(bbox)
     # print('roi_box: ' + str(roi_box))
 
     # - use landmark for cropping
-    # pts = face_regressor(img_ori, rect).parts()
-    # pts = np.array([[pt.x, pt.y] for pt in pts]).T
-    # roi_box = parse_roi_box_from_landmark(pts)
+    pts = face_regressor(img_ori, rect).parts()
+    pts = np.array([[pt.x, pt.y] for pt in pts]).T
+    roi_box = parse_roi_box_from_landmark(pts)
 
     img = crop_img(img_ori, roi_box)
 
