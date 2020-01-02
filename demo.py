@@ -14,10 +14,12 @@ from utils.inference import predict_68pts, predict_dense, dump_to_ply, get_suffi
     write_obj_with_colors, crop_img, parse_roi_box_from_landmark, parse_roi_box_from_bbox
 
 if __name__ == '__main__':
-    checkpoint = 'BEST_checkpoint.tar'
-    print('loading {}...'.format(checkpoint))
-    checkpoint = torch.load(checkpoint)
-    model = checkpoint['model'].module
+    # checkpoint = 'BEST_checkpoint.tar'
+    # print('loading {}...'.format(checkpoint))
+    # checkpoint = torch.load(checkpoint)
+    # model = checkpoint['model'].module
+    filename_scripted = '3ddfa_scripted.pt'
+    model = torch.jit.load(filename_scripted)
 
     cudnn.benchmark = True
     model = model.to(device)
